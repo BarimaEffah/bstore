@@ -16,21 +16,13 @@ struct Database {
 
 impl Database {
     fn new() -> Result<Database, std::io::Error> {
-        //read the db file
-        //parse string from file
-        //populate our map
-
-        // let contents = match std::fs::read_to_string("b.db") {
-        //     Ok(c) => c,
-        //     Err(error) => {
-        //         return Err(error);
-        //     }
-        // };
-
+        let mut map = HashMap::new();
         let contents = std::fs::read_to_string("b.db")?;
+        for line in contents.lines() {
+            let (key, value) = line.split_once('\t').expect("corrupt database");
+            map.insert(key.to_owned(), value.to_owned());
+        }
 
-        Ok(Database {
-            map: HashMap::new(),
-        })
+        Ok(Database { map })
     }
 }

@@ -5,13 +5,14 @@ fn main() {
     let value = arguments.next().expect("you didn't provide a value");
     println!("the key is {} and the value is {}", key, value);
 
-    let contents = format!("{}\t{}\n", key, value);
-    std::fs::write("b.db", contents).unwrap();
-    let database = Database::new().expect("Database crashed");
+    let mut database = Database::new().expect("Database crashed");
+    database.set(key.to_uppercase(), value.clone());
+    database.set(key, value);
 }
 
 struct Database {
     map: HashMap<String, String>,
+    flushed: bool,
 }
 
 impl Database {
@@ -23,6 +24,33 @@ impl Database {
             map.insert(key.to_owned(), value.to_owned());
         }
 
-        Ok(Database { map })
+        Ok(Database {
+            map,
+            flushed: false,
+        })
+    }
+
+    fn set(&mut self, key: String, value: String) {
+        self.map.insert(key, value);
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        let mut contents = String::new();
+        for (key, value) in &self.map {
+            contents.push_str(key);
+            contents.push('\t');
+            contents.push_str(value);
+            contents.push('\n');
+        }
+        self.flushed = true;
+        std::fs::write("b.db", contents)
+    }
+}
+
+impl Drop for Database {
+    fn drop(&mut self) {
+        if !self.flushed {
+            let _ = self.flush();
+        }
     }
 }
